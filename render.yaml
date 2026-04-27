@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: dashboard-riesgos
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_DEBUG
+        value: "false"
+      - key: DATA_SOURCE
+        value: csv_url
+      - key: GOOGLE_SHEETS_URL
+        value: https://docs.google.com/spreadsheets/d/e/2PACX-1vQwYGuq7x5NqIHzyUjcx5fOSPBNgZCewAd7cR5r7x5wRlTKK0fhWUwZLHwx3L3Uxn1uLIFePDf8fLxe/pub?gid=0&single=true&output=csv
+      - key: DATA_CACHE_TTL
+        value: "300"
+      - key: DATA_REQUEST_TIMEOUT
+        value: "20"
+      - key: DASHBOARD_CURRENCY
+        value: ARS
+      - key: DASHBOARD_LOCALE
+        value: es-AR
