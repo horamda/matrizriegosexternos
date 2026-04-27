@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis de Matriz de riesgos externos de del Palacio S.A</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body
+    data-dashboard-currency="{{ dashboard_currency }}"
+    data-dashboard-locale="{{ dashboard_locale }}"
+    data-dashboard-cache-ttl="{{ cache_ttl_seconds }}"
+>
+    <div class="page-shell">
+        <header class="hero-panel">
+            <div class="container-fluid px-4 px-lg-5">
+                <div class="row g-4 align-items-end">
+                    <div class="col-12 col-xl-8">
+                        <div class="hero-eyebrow">Operational Risk Command Center</div>
+                        <h1 class="hero-title">Analisis de Matriz de riesgos externos de del Palacio S.A</h1>
+                        <p class="hero-copy">
+                            Visualiza exposicion, perdidas economicas y severidad operativa para priorizar
+                            mitigaciones y anticipar eventos criticos.
+                        </p>
+                    </div>
+                    <div class="col-12 col-xl-4">
+                        <div class="hero-aside">
+                            <div class="hero-meta">
+                                <span class="meta-label">Fuente</span>
+                                <span class="meta-value" id="metaSource">-</span>
+                            </div>
+                            <div class="hero-meta">
+                                <span class="meta-label">Ultima actualizacion</span>
+                                <span class="meta-value" id="metaGeneratedAt">-</span>
+                            </div>
+                            <div class="hero-actions">
+                                <button class="btn btn-outline-light btn-soft" id="btnRefresh" type="button">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                    Actualizar datos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="container-fluid px-4 px-lg-5 pb-5">
+            <section class="surface-card filters-card">
+                <div class="section-caption">
+                    <span class="section-badge">Filtros dinamicos</span>
+                    <p class="section-copy mb-0">
+                        Segmenta el analisis por anio, tipo de evento y familia de riesgo.
+                    </p>
+                </div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-md-4 col-xl-3">
+                        <label class="form-label" for="filterYear">Anio</label>
+                        <select class="form-select app-select" id="filterYear">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4 col-xl-4">
+                        <label class="form-label" for="filterEventType">Tipo de evento</label>
+                        <select class="form-select app-select" id="filterEventType">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4 col-xl-3">
+                        <label class="form-label" for="filterRiskType">Tipo de riesgo</label>
+                        <select class="form-select app-select" id="filterRiskType">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-xl-2">
+                        <div class="d-grid gap-2 d-sm-flex d-xl-grid">
+                            <button class="btn btn-primary app-button flex-grow-1" id="btnApplyFilters" type="button">
+                                Aplicar filtros
+                            </button>
+                            <button class="btn btn-light app-button-secondary flex-grow-1" id="btnClearFilters" type="button">
+                                Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="active-filter-row">
+                    <span class="active-filter-label">Vista actual</span>
+                    <div class="active-filter-chips" id="activeFilterChips">
+                        <span class="filter-chip">Todos los datos</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-block decision-board">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-badge">Decision board</span>
+                        <h2 class="section-title">Pulso ejecutivo y accion inmediata</h2>
+                    </div>
+                    <div class="section-kicker" id="decisionStatusKicker">Estado pendiente</div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-xl-4">
+                        <article class="surface-card decision-card decision-status-neutral" id="riskPulseCard">
+                            <div class="decision-card-top">
+                                <span class="decision-icon"><i class="bi bi-activity"></i></span>
+                                <span class="decision-pill" id="riskPulseState">Pendiente</span>
+                            </div>
+                            <span class="decision-label">Postura de riesgo</span>
+                            <h3 class="decision-value" id="riskPulseHighRisk">0%</h3>
+                            <p class="decision-note" id="riskPulseNarrative">Cargando pulso ejecutivo...</p>
+                            <div class="decision-metrics">
+                                <div>
+                                    <span>Score medio</span>
+                                    <strong id="riskPulseAverage">0/25</strong>
+                                </div>
+                                <div>
+                                    <span>Mes actual</span>
+                                    <strong id="riskPulseMonth">-</strong>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <article class="surface-card decision-card decision-status-neutral" id="planCoverageCard">
+                            <div class="decision-card-top">
+                                <span class="decision-icon"><i class="bi bi-clipboard2-check"></i></span>
+                                <span class="decision-pill" id="planCoverageStatus">Pendiente</span>
+                            </div>
+                            <span class="decision-label">Acciones registradas</span>
+                            <h3 class="decision-value" id="planCoverageValue">0%</h3>
+                            <p class="decision-note" id="planCoverageNote">Sin lectura disponible.</p>
+                            <div class="mini-progress" aria-hidden="true">
+                                <span id="planCoverageBar"></span>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <article class="surface-card decision-card decision-status-neutral" id="concentrationCard">
+                            <div class="decision-card-top">
+                                <span class="decision-icon"><i class="bi bi-bullseye"></i></span>
+                                <span class="decision-pill" id="concentrationStatus">Pendiente</span>
+                            </div>
+                            <span class="decision-label">Concentracion principal</span>
+                            <h3 class="decision-value" id="concentrationValue">0%</h3>
+                            <p class="decision-note" id="concentrationNote">Sin concentracion calculada.</p>
+                            <div class="trend-chip" id="impactTrendChip">Sin tendencia mensual</div>
+                        </article>
+                    </div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-12 col-xl-4">
+                        <article class="surface-card action-card h-100">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Alertas</span>
+                                    <h3>Focos de gestion</h3>
+                                </div>
+                            </div>
+                            <div class="action-list" id="decisionAlerts">
+                                <div class="action-item action-neutral">
+                                    <strong>Cargando alertas</strong>
+                                    <span>Se generaran con los datos filtrados.</span>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-8">
+                        <article class="surface-card table-card h-100">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Cola de accion</span>
+                                    <h3>Eventos prioritarios por severidad</h3>
+                                </div>
+                                <span class="chart-pill">Riesgo + impacto</span>
+                            </div>
+                            <div class="table-responsive table-wrap table-wrap-sm">
+                                <table class="table app-table mb-0" id="priorityEventsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Evento</th>
+                                            <th>Riesgo</th>
+                                            <th>Score</th>
+                                            <th>Accion realizada</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" class="empty-cell">Cargando prioridades...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-block yoy-board">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-badge">Comparativo interanual</span>
+                        <h2 class="section-title">Analisis profundo contra el anio anterior</h2>
+                    </div>
+                    <div class="section-kicker" id="yoyPeriod">Periodo pendiente</div>
+                </div>
+                <article class="surface-card insight-summary-card yoy-summary-card">
+                    <div class="summary-marker">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+                    <div>
+                        <div class="summary-label">Lectura YoY</div>
+                        <p class="summary-copy" id="yoySummary">
+                            Cargando comparativo interanual...
+                        </p>
+                    </div>
+                </article>
+                <div class="row g-3 mt-1">
+                    <div class="col-12 col-sm-6 col-xl">
+                        <article class="surface-card yoy-metric-card" id="yoyEventsCard">
+                            <span class="yoy-label">Eventos</span>
+                            <h3 class="yoy-value" id="yoyEventsValue">-</h3>
+                            <p class="yoy-delta" id="yoyEventsDelta">Sin comparacion</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl">
+                        <article class="surface-card yoy-metric-card" id="yoyImpactCard">
+                            <span class="yoy-label">Impacto financiero</span>
+                            <h3 class="yoy-value" id="yoyImpactValue">-</h3>
+                            <p class="yoy-delta" id="yoyImpactDelta">Sin comparacion</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl">
+                        <article class="surface-card yoy-metric-card" id="yoyAverageCard">
+                            <span class="yoy-label">Promedio por evento</span>
+                            <h3 class="yoy-value" id="yoyAverageValue">-</h3>
+                            <p class="yoy-delta" id="yoyAverageDelta">Sin comparacion</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl">
+                        <article class="surface-card yoy-metric-card" id="yoyHighRiskCard">
+                            <span class="yoy-label">Alto riesgo</span>
+                            <h3 class="yoy-value" id="yoyHighRiskValue">-</h3>
+                            <p class="yoy-delta" id="yoyHighRiskDelta">Sin comparacion</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl">
+                        <article class="surface-card yoy-metric-card" id="yoyRiskScoreCard">
+                            <span class="yoy-label">Score medio</span>
+                            <h3 class="yoy-value" id="yoyRiskScoreValue">-</h3>
+                            <p class="yoy-delta" id="yoyRiskScoreDelta">Sin comparacion</p>
+                        </article>
+                    </div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-12 col-xl-6">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Eventos YoY</span>
+                                    <h3>Eventos mensuales vs anio anterior</h3>
+                                </div>
+                                <span class="chart-pill">Comparativo mensual</span>
+                            </div>
+                            <div class="chart-area chart-area-md">
+                                <canvas id="chartYoyEvents"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Impacto YoY</span>
+                                    <h3>Impacto mensual vs anio anterior</h3>
+                                </div>
+                                <span class="chart-pill">Comparativo mensual</span>
+                            </div>
+                            <div class="chart-area chart-area-md">
+                                <canvas id="chartYoyImpact"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Delta por riesgo</span>
+                                    <h3>Variacion interanual de impacto por tipo de riesgo</h3>
+                                </div>
+                                <span class="chart-pill">Comparacion YoY</span>
+                            </div>
+                            <div class="chart-area chart-area-md chart-area-delta">
+                                <canvas id="chartYoyRiskDelta"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <article class="surface-card table-card h-100">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Cambio por riesgo</span>
+                                    <h3>Familias que mas variaron</h3>
+                                </div>
+                                <span class="chart-pill">Delta impacto</span>
+                            </div>
+                            <div class="table-responsive table-wrap table-wrap-sm">
+                                <table class="table app-table mb-0" id="yoyRiskTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Tipo de riesgo</th>
+                                            <th>Eventos</th>
+                                            <th>Impacto</th>
+                                            <th>Delta</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="4" class="empty-cell">Cargando comparativo...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <article class="surface-card table-card h-100">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Cambio por evento</span>
+                                    <h3>Tipos de evento que mas variaron</h3>
+                                </div>
+                                <span class="chart-pill">Delta impacto</span>
+                            </div>
+                            <div class="table-responsive table-wrap table-wrap-sm">
+                                <table class="table app-table mb-0" id="yoyEventTypeTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Tipo de evento</th>
+                                            <th>Eventos</th>
+                                            <th>Impacto</th>
+                                            <th>Delta</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="4" class="empty-cell">Cargando comparativo...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section class="insights-block">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-badge">Insights automaticos</span>
+                        <h2 class="section-title">Lectura ejecutiva del negocio</h2>
+                    </div>
+                    <div class="section-kicker" id="recordCounter">0 eventos analizados</div>
+                </div>
+                <div class="surface-card insight-summary-card">
+                    <div class="summary-marker">
+                        <i class="bi bi-stars"></i>
+                    </div>
+                    <div>
+                        <div class="summary-label">Resumen ejecutivo</div>
+                        <p class="summary-copy" id="executiveSummary">
+                            Cargando resumen ejecutivo...
+                        </p>
+                    </div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <article class="surface-card insight-card">
+                            <span class="insight-label">Principal riesgo del negocio</span>
+                            <h3 class="insight-value" id="insightPrincipalRisk">-</h3>
+                            <p class="insight-note" id="insightPrincipalRiskNote">-</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <article class="surface-card insight-card">
+                            <span class="insight-label">Mes mas critico</span>
+                            <h3 class="insight-value" id="insightCriticalMonth">-</h3>
+                            <p class="insight-note" id="insightCriticalMonthNote">-</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <article class="surface-card insight-card">
+                            <span class="insight-label">Evento mas costoso</span>
+                            <h3 class="insight-value" id="insightCostliestEvent">-</h3>
+                            <p class="insight-note" id="insightCostliestEventNote">-</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <article class="surface-card insight-card">
+                            <span class="insight-label">Tipo de evento mas frecuente</span>
+                            <h3 class="insight-value" id="insightFrequentEventType">-</h3>
+                            <p class="insight-note" id="insightFrequentEventTypeNote">-</p>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-block">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-badge">Nivel 1</span>
+                        <h2 class="section-title">KPIs ejecutivos</h2>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-sm-6 col-xl">
+                        <article class="surface-card kpi-card kpi-neutral">
+                            <div class="kpi-header">
+                                <span class="kpi-icon"><i class="bi bi-collection"></i></span>
+                                <span class="kpi-tag">Visibilidad</span>
+                            </div>
+                            <span class="kpi-label">Total de eventos</span>
+                            <h3 class="kpi-value" id="kpiTotalEvents">0</h3>
+                            <p class="kpi-note">Base filtrada para seguimiento gerencial.</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl">
+                        <article class="surface-card kpi-card kpi-danger" id="kpiTotalImpactCard">
+                            <div class="kpi-header">
+                                <span class="kpi-icon"><i class="bi bi-cash-stack"></i></span>
+                                <span class="kpi-tag">Exposicion</span>
+                            </div>
+                            <span class="kpi-label">Impacto financiero total</span>
+                            <h3 class="kpi-value" id="kpiTotalImpact">-</h3>
+                            <p class="kpi-note" id="kpiTotalImpactNote">Perdida economica acumulada.</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl">
+                        <article class="surface-card kpi-card kpi-warning" id="kpiAverageCard">
+                            <div class="kpi-header">
+                                <span class="kpi-icon"><i class="bi bi-graph-up"></i></span>
+                                <span class="kpi-tag">Eficiencia</span>
+                            </div>
+                            <span class="kpi-label">Promedio por evento</span>
+                            <h3 class="kpi-value" id="kpiAveragePerEvent">-</h3>
+                            <p class="kpi-note">Costo medio de materializacion.</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl">
+                        <article class="surface-card kpi-card kpi-danger" id="kpiCostliestCard">
+                            <div class="kpi-header">
+                                <span class="kpi-icon"><i class="bi bi-exclamation-diamond"></i></span>
+                                <span class="kpi-tag">Criticidad</span>
+                            </div>
+                            <span class="kpi-label">Evento mas costoso</span>
+                            <h3 class="kpi-value kpi-value-sm" id="kpiCostliestEvent">-</h3>
+                            <p class="kpi-note" id="kpiCostliestEventNote">Sin registros destacados.</p>
+                        </article>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl">
+                        <article class="surface-card kpi-card kpi-success" id="kpiHighRiskCard">
+                            <div class="kpi-header">
+                                <span class="kpi-icon"><i class="bi bi-shield-exclamation"></i></span>
+                                <span class="kpi-tag">Severidad</span>
+                            </div>
+                            <span class="kpi-label">% de eventos de alto riesgo</span>
+                            <h3 class="kpi-value" id="kpiHighRiskPercent">0%</h3>
+                            <p class="kpi-note" id="kpiHighRiskNote">Distribucion del riesgo operativo.</p>
+                        </article>
+                    </div>
+                </div>
+                <div class="surface-card risk-distribution-card mt-3">
+                    <div class="distribution-copy">
+                        <h3>Distribucion de niveles de riesgo</h3>
+                        <p>El mix de eventos ayuda a distinguir foco critico, exposicion media y riesgo controlado.</p>
+                    </div>
+                    <div class="distribution-bars">
+                        <div class="distribution-item">
+                            <div class="distribution-label">
+                                <span>Alto</span>
+                                <strong id="riskCountHigh">0</strong>
+                            </div>
+                            <div class="distribution-track">
+                                <span class="distribution-fill fill-danger" id="riskBarHigh"></span>
+                            </div>
+                        </div>
+                        <div class="distribution-item">
+                            <div class="distribution-label">
+                                <span>Medio</span>
+                                <strong id="riskCountMedium">0</strong>
+                            </div>
+                            <div class="distribution-track">
+                                <span class="distribution-fill fill-warning" id="riskBarMedium"></span>
+                            </div>
+                        </div>
+                        <div class="distribution-item">
+                            <div class="distribution-label">
+                                <span>Controlado</span>
+                                <strong id="riskCountLow">0</strong>
+                            </div>
+                            <div class="distribution-track">
+                                <span class="distribution-fill fill-success" id="riskBarLow"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-block">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-badge">Nivel 2</span>
+                        <h2 class="section-title">Analisis temporal</h2>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-xl-6">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Tendencia</span>
+                                    <h3>Eventos por mes</h3>
+                                </div>
+                                <span class="chart-pill">Line chart</span>
+                            </div>
+                            <div class="chart-area chart-area-md">
+                                <canvas id="chartEventsByMonth"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Costo mensual</span>
+                                    <h3>Impacto financiero por mes</h3>
+                                </div>
+                                <span class="chart-pill">Line chart</span>
+                            </div>
+                            <div class="chart-area chart-area-md">
+                                <canvas id="chartImpactByMonth"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Comparativo</span>
+                                    <h3>Comparacion anio a anio</h3>
+                                </div>
+                                <span class="chart-pill">Combo chart</span>
+                            </div>
+                            <div class="chart-area chart-area-lg">
+                                <canvas id="chartYearComparison"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-block">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-badge">Nivel 3</span>
+                        <h2 class="section-title">Analisis de riesgo</h2>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-xl-6">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Frecuencia</span>
+                                    <h3>Eventos por tipo de riesgo</h3>
+                                </div>
+                                <span class="chart-pill">Barras</span>
+                            </div>
+                            <div class="chart-area chart-area-md">
+                                <canvas id="chartEventsByRiskType"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Perdida</span>
+                                    <h3>Impacto financiero por tipo</h3>
+                                </div>
+                                <span class="chart-pill">Barras</span>
+                            </div>
+                            <div class="chart-area chart-area-md">
+                                <canvas id="chartImpactByRiskType"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-4">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Severidad</span>
+                                    <h3>Distribucion por nivel de riesgo</h3>
+                                </div>
+                                <span class="chart-pill">Dona</span>
+                            </div>
+                            <div class="chart-area chart-area-md chart-area-compact">
+                                <canvas id="chartRiskLevelDistribution"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-4">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Tipo de evento</span>
+                                    <h3>Eventos por tipo de evento</h3>
+                                </div>
+                                <span class="chart-pill">Barras</span>
+                            </div>
+                            <div class="chart-area chart-area-md chart-area-compact">
+                                <canvas id="chartEventsByEventType"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-4">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Impacto por evento</span>
+                                    <h3>Impacto por tipo de evento</h3>
+                                </div>
+                                <span class="chart-pill">Barras</span>
+                            </div>
+                            <div class="chart-area chart-area-md chart-area-compact">
+                                <canvas id="chartImpactByEventType"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-7">
+                        <article class="surface-card chart-card">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Priorizacion</span>
+                                    <h3>Pareto 80/20 de impacto financiero</h3>
+                                </div>
+                                <span class="chart-pill">Pareto</span>
+                            </div>
+                            <div class="chart-area chart-area-lg">
+                                <canvas id="chartPareto"></canvas>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="col-12 col-xl-5">
+                        <article class="surface-card table-card h-100">
+                            <div class="chart-card-header">
+                                <div>
+                                    <span class="chart-overline">Prioridad</span>
+                                    <h3>Top 10 eventos con mayor impacto</h3>
+                                </div>
+                                <span class="chart-pill">Tabla</span>
+                            </div>
+                            <div class="table-responsive table-wrap">
+                                <table class="table app-table mb-0" id="topEventsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Evento</th>
+                                            <th>Riesgo</th>
+                                            <th>Impacto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="4" class="empty-cell">Cargando datos...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-block matrix-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-badge">Nivel 4</span>
+                        <h2 class="section-title">Analisis de matriz de riesgos externos</h2>
+                    </div>
+                </div>
+                <article class="surface-card chart-card matrix-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <span class="chart-overline">Matriz externa</span>
+                            <h3>Probabilidad vs impacto con peso financiero</h3>
+                        </div>
+                        <span class="chart-pill">Riesgo externo</span>
+                    </div>
+                    <p class="matrix-copy">
+                        Eje X = probabilidad, eje Y = impacto cualitativo, tamano = impacto financiero y color = tipo de riesgo.
+                    </p>
+                    <div class="matrix-guide" aria-label="Guia de lectura de matriz">
+                        <span><strong>Derecha</strong> mayor probabilidad</span>
+                        <span><strong>Arriba</strong> mayor impacto</span>
+                        <span><strong>Burbuja</strong> mayor costo</span>
+                    </div>
+                    <div class="chart-area chart-area-xl">
+                        <canvas id="chartRiskMatrix"></canvas>
+                    </div>
+                </article>
+            </section>
+
+            <section class="section-block event-history-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-badge">Serie historica</span>
+                        <h2 class="section-title">Cantidad mensual de eventos por tipo</h2>
+                    </div>
+                    <div class="section-kicker">Desde el primer dato hasta la actualidad</div>
+                </div>
+                <article class="surface-card chart-card event-history-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <span class="chart-overline">Eventos mensuales</span>
+                            <h3>Historial mensual con gatillo por tipo de evento</h3>
+                        </div>
+                        <div class="event-history-control">
+                            <label class="form-label" for="eventTimelineType">Tipo de evento</label>
+                            <select class="form-select app-select app-select-sm" id="eventTimelineType">
+                                <option value="__all__">Todos los tipos</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="event-timeline-scroll">
+                        <div class="chart-area chart-area-lg event-timeline-area" id="eventTimelineArea">
+                            <canvas id="chartEventTimeline"></canvas>
+                        </div>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
+
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div class="toast app-toast align-items-center border-0" id="appToast" role="status" aria-live="polite" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="appToastBody">Datos actualizados.</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script>
+        window.dashboardConfig = {
+            apiUrl: "{{ url_for('dashboard_data') }}",
+            refreshUrl: "{{ url_for('refresh_dashboard_data') }}",
+            currency: "{{ dashboard_currency }}",
+            locale: "{{ dashboard_locale }}"
+        };
+    </script>
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
