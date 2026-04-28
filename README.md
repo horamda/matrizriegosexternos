@@ -70,7 +70,10 @@ El dashboard estará disponible en: http://localhost:5000
 | Endpoint | Descripción |
 |----------|-------------|
 | `/` | Dashboard principal |
+| `/riesgos-detalle` | Hoja HTML separada con el detalle de riesgos externos |
 | `/api/datos` | Devuelve todos los KPIs y gráficos |
+| `/api/riesgos-detalle` | Devuelve el detalle de riesgos externos en JSON |
+| `/api/riesgos-detalle.csv` | Exporta la hoja CSV con el detalle de riesgos externos |
 | `/api/actualizar` | Fuerza actualización de datos |
 
 ## Características
@@ -81,6 +84,8 @@ El dashboard estará disponible en: http://localhost:5000
 - ✅ Gráfico: Eventos por tipo de riesgo
 - ✅ Gráfico: Matriz de riesgo (impacto vs probabilidad)
 - ✅ Tabla: Top 10 eventos con mayor impacto
+- ✅ Hoja separada: Detalle completo de riesgos externos desde Google Sheets
+- ✅ Hoja CSV: Descarga filtrada del detalle de riesgos externos
 - 🔄 Auto-actualización cada 5 minutos
 - 💾 Cache en memoria para mejor rendimiento
 

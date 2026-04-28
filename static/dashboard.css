@@ -151,17 +151,37 @@ body {
 }
 
 .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
     padding-top: 0.45rem;
 }
 
 .btn-soft {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.55rem;
     border-radius: 999px;
     border-color: rgba(255, 255, 255, 0.26);
     padding-inline: 1rem;
     font-weight: 700;
+}
+
+.detail-hero-layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 1rem;
+}
+
+.detail-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.65rem;
 }
 
 main {
@@ -387,6 +407,45 @@ main {
     color: var(--muted);
     font-size: 0.86rem;
     font-weight: 700;
+}
+
+.detail-heading {
+    align-items: center;
+}
+
+.detail-heading-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.detail-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.detail-summary-card {
+    padding: 1rem;
+}
+
+.detail-summary-card span {
+    display: block;
+    color: var(--muted);
+    font-size: clamp(0.72rem, 0.88vw, 0.82rem);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.detail-summary-card strong {
+    display: block;
+    margin-top: 0.35rem;
+    color: var(--text);
+    font-size: clamp(1.25rem, 2vw, 1.8rem);
+    line-height: 1.1;
 }
 
 .decision-card {
@@ -1129,6 +1188,29 @@ main {
     min-height: 14rem;
 }
 
+.detail-table-shell {
+    min-height: 18rem;
+    max-height: calc(100vh - 19rem);
+    overflow: auto;
+    scrollbar-color: rgba(15, 118, 110, 0.45) rgba(148, 163, 184, 0.16);
+    scrollbar-width: thin;
+}
+
+.detail-table-shell::-webkit-scrollbar {
+    width: 0.55rem;
+    height: 0.55rem;
+}
+
+.detail-table-shell::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.16);
+}
+
+.detail-table-shell::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.45);
+}
+
 .app-table {
     --bs-table-bg: transparent;
     --bs-table-hover-bg: rgba(15, 118, 110, 0.035);
@@ -1147,11 +1229,89 @@ main {
     white-space: nowrap;
 }
 
+.risk-detail-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+}
+
 .app-table tbody td {
     padding-block: 0.95rem;
     vertical-align: top;
     border-color: rgba(148, 163, 184, 0.14);
     color: var(--text);
+}
+
+.risk-detail-table {
+    min-width: 1180px;
+    table-layout: fixed;
+}
+
+.risk-detail-table tbody td {
+    font-size: clamp(0.78rem, 0.82vw, 0.9rem);
+    line-height: 1.45;
+}
+
+.risk-detail-table th:nth-child(1),
+.risk-detail-table td:nth-child(1) {
+    width: 4rem;
+}
+
+.risk-detail-table th:nth-child(2),
+.risk-detail-table td:nth-child(2) {
+    width: 7.5rem;
+}
+
+.risk-detail-table th:nth-child(3),
+.risk-detail-table td:nth-child(3) {
+    width: 18rem;
+}
+
+.risk-detail-table th:nth-child(4),
+.risk-detail-table td:nth-child(4),
+.risk-detail-table th:nth-child(5),
+.risk-detail-table td:nth-child(5) {
+    width: 10rem;
+}
+
+.risk-detail-table th:nth-child(6),
+.risk-detail-table td:nth-child(6),
+.risk-detail-table th:nth-child(7),
+.risk-detail-table td:nth-child(7),
+.risk-detail-table th:nth-child(8),
+.risk-detail-table td:nth-child(8) {
+    width: 8.5rem;
+}
+
+.risk-detail-table th:nth-child(9),
+.risk-detail-table td:nth-child(9) {
+    width: 10rem;
+}
+
+.risk-detail-table th:nth-child(10),
+.risk-detail-table td:nth-child(10) {
+    width: 16rem;
+}
+
+.risk-detail-event {
+    min-width: 0;
+}
+
+.risk-detail-plan {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.detail-score {
+    display: block;
+    font-weight: 800;
+}
+
+.detail-date-cell strong {
+    display: block;
+    font-size: 0.9em;
 }
 
 .app-table tbody tr {
@@ -1275,6 +1435,18 @@ main {
         padding-bottom: 1.35rem;
     }
 
+    .detail-hero-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-hero-actions {
+        justify-content: flex-start;
+    }
+
+    .detail-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     main {
         margin-top: -1rem;
     }
@@ -1329,6 +1501,62 @@ main {
         display: grid;
     }
 
+    .detail-table-shell {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .risk-detail-table {
+        min-width: 0;
+        table-layout: auto;
+    }
+
+    .risk-detail-table thead {
+        display: none;
+    }
+
+    .risk-detail-table,
+    .risk-detail-table tbody,
+    .risk-detail-table tr,
+    .risk-detail-table td {
+        display: block;
+        width: 100% !important;
+    }
+
+    .risk-detail-table tbody tr {
+        margin-bottom: 0.85rem;
+        padding: 0.85rem;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.78);
+    }
+
+    .risk-detail-table tbody td {
+        display: grid;
+        grid-template-columns: minmax(7.5rem, 38%) minmax(0, 1fr);
+        gap: 0.7rem;
+        padding: 0.5rem 0 !important;
+        border: 0;
+        font-size: 0.86rem;
+    }
+
+    .risk-detail-table tbody td::before {
+        content: attr(data-label);
+        color: var(--muted-soft);
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .risk-detail-table .empty-cell {
+        display: block;
+    }
+
+    .risk-detail-table .empty-cell::before {
+        content: none;
+    }
+
     .event-history-control {
         width: 100%;
     }
@@ -1361,5 +1589,27 @@ main {
     .matrix-guide {
         display: grid;
         grid-template-columns: 1fr;
+    }
+
+    .detail-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-hero-actions,
+    .detail-hero-actions .btn-soft {
+        width: 100%;
+    }
+
+    .risk-detail-table tbody td {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+
+    .detail-heading-actions {
+        width: 100%;
+    }
+
+    .detail-heading-actions {
+        justify-content: stretch;
     }
 }

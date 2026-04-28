@@ -133,6 +133,30 @@ function bindDashboardEvents() {
     });
 }
 
+function getCurrentFilterParams() {
+    const params = new URLSearchParams();
+    const year = document.getElementById("filterYear").value;
+    const eventType = document.getElementById("filterEventType").value;
+    const riskType = document.getElementById("filterRiskType").value;
+
+    if (year && year !== "all") {
+        params.set("year", year);
+    }
+    if (eventType && eventType !== "all") {
+        params.set("event_type", eventType);
+    }
+    if (riskType && riskType !== "all") {
+        params.set("risk_type", riskType);
+    }
+
+    return params;
+}
+
+function urlWithParams(baseUrl, params) {
+    const query = params.toString();
+    return query ? `${baseUrl}?${query}` : baseUrl;
+}
+
 function initializeHelpTips() {
     const helpTextByLabel = {
         "#": "Orden de prioridad o ranking dentro de la tabla.",
@@ -349,24 +373,7 @@ async function loadDashboard({ silent = false } = {}) {
     try {
         setLoadingState(true);
 
-        const params = new URLSearchParams();
-        const year = document.getElementById("filterYear").value;
-        const eventType = document.getElementById("filterEventType").value;
-        const riskType = document.getElementById("filterRiskType").value;
-
-        if (year && year !== "all") {
-            params.set("year", year);
-        }
-        if (eventType && eventType !== "all") {
-            params.set("event_type", eventType);
-        }
-        if (riskType && riskType !== "all") {
-            params.set("risk_type", riskType);
-        }
-
-        const url = params.toString()
-            ? `${dashboardConfig.apiUrl}?${params.toString()}`
-            : dashboardConfig.apiUrl;
+        const url = urlWithParams(dashboardConfig.apiUrl, getCurrentFilterParams());
 
         const response = await fetch(url, { cache: "no-store" });
         if (!response.ok) {

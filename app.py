@@ -14,7 +14,7 @@ from typing import Any
 
 import pandas as pd
 import requests
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, Response, jsonify, render_template, request
 
 app = Flask(__name__)
 
@@ -80,6 +80,42 @@ EXPECTED_COLUMNS = [
     "nivel_riesgo",
     "riesgo_score",
 ]
+
+RISK_DETAIL_COLUMNS = [
+    "prioridad",
+    "fecha",
+    "mes_label",
+    "anio",
+    "evento",
+    "tipo_evento",
+    "tipo_riesgo",
+    "impacto_cualitativo",
+    "probabilidad",
+    "impacto_score",
+    "probabilidad_score",
+    "riesgo_score",
+    "nivel_riesgo",
+    "impacto_financiero",
+    "plan_accion",
+]
+
+RISK_DETAIL_EXPORT_HEADERS = {
+    "prioridad": "Prioridad",
+    "fecha": "Fecha",
+    "mes_label": "Mes",
+    "anio": "Anio",
+    "evento": "Evento",
+    "tipo_evento": "Tipo de evento",
+    "tipo_riesgo": "Tipo de riesgo",
+    "impacto_cualitativo": "Impacto cualitativo",
+    "probabilidad": "Probabilidad",
+    "impacto_score": "Impacto score",
+    "probabilidad_score": "Probabilidad score",
+    "riesgo_score": "Riesgo score",
+    "nivel_riesgo": "Nivel de riesgo",
+    "impacto_financiero": "Impacto financiero",
+    "plan_accion": "Plan de accion",
+}
 
 COLUMN_ALIASES = {
     "fecha": {
@@ -766,6 +802,45 @@ def build_top_events(frame: pd.DataFrame, limit: int = 10) -> list[dict[str, Any
     return records_from_frame(top_events)
 
 
+def build_risk_detail_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    if frame.empty:
+        return pd.DataFrame(columns=RISK_DETAIL_COLUMNS)
+
+    detail = frame.copy()
+    detail["_nivel_orden"] = detail["nivel_riesgo"].map({"alto": 1, "medio": 2, "bajo": 3}).fillna(99)
+    detail = detail.sort_values(
+        ["_nivel_orden", "riesgo_score", "impacto_financiero", "fecha"],
+        ascending=[True, False, False, False],
+        na_position="last",
+    ).reset_index(drop=True)
+    detail.insert(0, "prioridad", range(1, len(detail) + 1))
+    detail["fecha"] = detail["fecha"].dt.strftime("%Y-%m-%d")
+
+    return detail[RISK_DETAIL_COLUMNS]
+
+
+def build_risk_detail(frame: pd.DataFrame) -> list[dict[str, Any]]:
+    return records_from_frame(build_risk_detail_frame(frame))
+
+
+def build_risk_detail_summary(frame: pd.DataFrame) -> dict[str, Any]:
+    total_events = int(len(frame))
+    total_financial_impact = float(frame["impacto_financiero"].sum()) if total_events else 0.0
+    high_risk_events = int((frame["nivel_riesgo"] == "alto").sum()) if total_events else 0
+    average_risk_score = round(float(frame["riesgo_score"].mean()), 1) if total_events else 0.0
+    latest_date = None
+    if total_events and frame["fecha"].notna().any():
+        latest_date = frame["fecha"].max().strftime("%Y-%m-%d")
+
+    return {
+        "total_eventos": total_events,
+        "impacto_financiero_total": total_financial_impact,
+        "eventos_alto_riesgo": high_risk_events,
+        "riesgo_promedio": average_risk_score,
+        "ultima_fecha": latest_date,
+    }
+
+
 def build_pareto(frame: pd.DataFrame) -> list[dict[str, Any]]:
     pareto = (
         frame.groupby("tipo_riesgo", as_index=False)
@@ -1427,6 +1502,29 @@ def build_response_payload(
     }
 
 
+def build_risk_detail_payload(frame: pd.DataFrame, selected_filters: dict[str, str]) -> dict[str, Any]:
+    return {
+        "detalle": build_risk_detail(frame),
+        "resumen": build_risk_detail_summary(frame),
+        "filters": selected_filters,
+        "meta": {
+            "currency": DASHBOARD_CURRENCY,
+            "locale": DASHBOARD_LOCALE,
+            "source": DATA_SOURCE,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "records": int(len(frame)),
+        },
+    }
+
+
+def selected_filters_from_request() -> dict[str, str]:
+    return {
+        "year": request.args.get("year", "all"),
+        "event_type": request.args.get("event_type", "all"),
+        "risk_type": request.args.get("risk_type", "all"),
+    }
+
+
 @app.route("/")
 def index() -> str:
     return render_template(
@@ -1437,15 +1535,20 @@ def index() -> str:
     )
 
 
+@app.route("/riesgos-detalle")
+def risk_detail_page() -> str:
+    return render_template(
+        "riesgos_detalle.html",
+        dashboard_currency=DASHBOARD_CURRENCY,
+        dashboard_locale=DASHBOARD_LOCALE,
+    )
+
+
 @app.route("/api/datos")
 @app.route("/api/dashboard")
 def dashboard_data():
     base_frame = get_cached_dataframe()
-    selected_filters = {
-        "year": request.args.get("year", "all"),
-        "event_type": request.args.get("event_type", "all"),
-        "risk_type": request.args.get("risk_type", "all"),
-    }
+    selected_filters = selected_filters_from_request()
 
     filtered_frame = apply_filters(
         base_frame,
@@ -1457,6 +1560,46 @@ def dashboard_data():
     payload = build_response_payload(filtered_frame, selected_filters, base_frame)
     payload["available_filters"] = get_filter_options(base_frame)
     return jsonify(payload)
+
+
+@app.route("/api/riesgos-detalle")
+def risk_detail_data():
+    base_frame = get_cached_dataframe()
+    selected_filters = selected_filters_from_request()
+    filtered_frame = apply_filters(
+        base_frame,
+        selected_filters["year"],
+        selected_filters["event_type"],
+        selected_filters["risk_type"],
+    )
+
+    payload = build_risk_detail_payload(filtered_frame, selected_filters)
+    payload["available_filters"] = get_filter_options(base_frame)
+    return jsonify(payload)
+
+
+@app.route("/api/riesgos-detalle.csv")
+def download_risk_detail():
+    base_frame = get_cached_dataframe()
+    selected_filters = selected_filters_from_request()
+    filtered_frame = apply_filters(
+        base_frame,
+        selected_filters["year"],
+        selected_filters["event_type"],
+        selected_filters["risk_type"],
+    )
+
+    export_frame = build_risk_detail_frame(filtered_frame).rename(columns=RISK_DETAIL_EXPORT_HEADERS)
+    output = StringIO()
+    export_frame.to_csv(output, index=False, na_rep="")
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"riesgos_externos_detalle_{timestamp}.csv"
+    return Response(
+        "\ufeff" + output.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.route("/api/actualizar")

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de riesgos externos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body
+    class="detail-page"
+    data-dashboard-currency="{{ dashboard_currency }}"
+    data-dashboard-locale="{{ dashboard_locale }}"
+>
+    <div class="page-shell">
+        <header class="hero-panel detail-hero-panel">
+            <div class="container-fluid px-4 px-lg-5">
+                <div class="detail-hero-layout">
+                    <div>
+                        <div class="hero-eyebrow">Hoja operativa</div>
+                        <h1 class="hero-title">Detalle de riesgos externos</h1>
+                        <p class="hero-copy">
+                            Consulta todos los eventos levantados desde Google Sheets, aplica filtros y descarga la hoja en CSV.
+                        </p>
+                    </div>
+                    <div class="detail-hero-actions">
+                        <a class="btn btn-outline-light btn-soft" href="{{ url_for('index') }}">
+                            <i class="bi bi-arrow-left"></i>
+                            Dashboard
+                        </a>
+                        <a class="btn btn-outline-light btn-soft" id="btnDownloadRiskDetail" href="{{ url_for('download_risk_detail') }}">
+                            <i class="bi bi-filetype-csv"></i>
+                            Descargar CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="container-fluid px-4 px-lg-5 pb-5">
+            <section class="surface-card filters-card detail-filters-card">
+                <div class="section-caption">
+                    <span class="section-badge">Filtros</span>
+                    <p class="section-copy mb-0">La tabla y la descarga usan la misma seleccion.</p>
+                </div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-md-4 col-xl-3">
+                        <label class="form-label" for="detailFilterYear">Anio</label>
+                        <select class="form-select app-select" id="detailFilterYear">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4 col-xl-4">
+                        <label class="form-label" for="detailFilterEventType">Tipo de evento</label>
+                        <select class="form-select app-select" id="detailFilterEventType">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4 col-xl-3">
+                        <label class="form-label" for="detailFilterRiskType">Tipo de riesgo</label>
+                        <select class="form-select app-select" id="detailFilterRiskType">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-xl-2">
+                        <div class="d-grid gap-2 d-sm-flex d-xl-grid">
+                            <button class="btn btn-primary app-button flex-grow-1" id="btnApplyDetailFilters" type="button">
+                                Aplicar
+                            </button>
+                            <button class="btn btn-light app-button-secondary flex-grow-1" id="btnClearDetailFilters" type="button">
+                                Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="active-filter-row">
+                    <span class="active-filter-label">Vista actual</span>
+                    <div class="active-filter-chips" id="detailActiveFilterChips">
+                        <span class="filter-chip">Todos los datos</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-block detail-summary-grid" aria-label="Resumen del detalle">
+                <article class="surface-card detail-summary-card">
+                    <span>Total eventos</span>
+                    <strong id="detailTotalEvents">0</strong>
+                </article>
+                <article class="surface-card detail-summary-card">
+                    <span>Impacto financiero</span>
+                    <strong id="detailTotalImpact">$0</strong>
+                </article>
+                <article class="surface-card detail-summary-card">
+                    <span>Alto riesgo</span>
+                    <strong id="detailHighRiskEvents">0</strong>
+                </article>
+                <article class="surface-card detail-summary-card">
+                    <span>Score promedio</span>
+                    <strong id="detailAverageRisk">0/25</strong>
+                </article>
+            </section>
+
+            <section class="section-block">
+                <div class="section-heading detail-heading">
+                    <div>
+                        <span class="section-badge">Tabla</span>
+                        <h2 class="section-title">Eventos levantados desde Google Sheets</h2>
+                    </div>
+                    <div class="detail-heading-actions">
+                        <span class="section-kicker" id="detailRecordCounter">0 registros</span>
+                        <span class="section-kicker" id="detailGeneratedAt">Sin actualizar</span>
+                    </div>
+                </div>
+                <article class="surface-card table-card risk-detail-card">
+                    <div class="table-responsive detail-table-shell">
+                        <table class="table app-table risk-detail-table mb-0" id="riskDetailTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Fecha</th>
+                                    <th>Evento</th>
+                                    <th>Tipo evento</th>
+                                    <th>Tipo riesgo</th>
+                                    <th>Nivel</th>
+                                    <th>Impacto</th>
+                                    <th>Probabilidad</th>
+                                    <th>Impacto financiero</th>
+                                    <th>Plan de accion</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="10" class="empty-cell">Cargando detalle de riesgos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
+
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div class="toast app-toast align-items-center border-0" id="appToast" role="status" aria-live="polite" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="appToastBody">Datos actualizados.</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.riskDetailConfig = {
+            apiUrl: "{{ url_for('risk_detail_data') }}",
+            downloadUrl: "{{ url_for('download_risk_detail') }}",
+            currency: "{{ dashboard_currency }}",
+            locale: "{{ dashboard_locale }}"
+        };
+    </script>
+    <script src="{{ url_for('static', filename='riesgos_detalle.js') }}"></script>
+</body>
+</html>
